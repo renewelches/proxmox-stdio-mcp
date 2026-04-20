@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+.eggs/
+
+# Build / distribution
+dist/
+build/
+*.whl
+*.tar.gz
+*.zip
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env/
+
+# uv
+.python-version
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+.pyright/
+.ruff_cache/
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Environment / secrets
+.env
+.envrc
+*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+*.log
