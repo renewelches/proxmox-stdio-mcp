@@ -5,6 +5,7 @@ import json
 from mcp.server.fastmcp import FastMCP
 
 from proxmox_mcp.auth import create_proxmox_client
+from proxmox_mcp.errors import handle_proxmox_error
 
 ALLOWED_COMMANDS = ["apt-get update", "apt-get upgrade -y", "apt-get dist-upgrade -y"]
 
@@ -23,6 +24,7 @@ def register(mcp: FastMCP) -> None:
     """Register package update tools with the MCP server."""
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/nodes/{node}", ["Sys.Modify"]]')
     def node_apt_update(node: str) -> str:
         """Update the package index on a Proxmox node (equivalent to 'apt-get update').
 
@@ -40,6 +42,7 @@ def register(mcp: FastMCP) -> None:
         return json.dumps({"upid": upid, "action": "apt-update", "node": node})
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/nodes/{node}", ["Sys.Audit"]]')
     def node_apt_list_upgrades(node: str) -> str:
         """List available package upgrades on a Proxmox node.
 
@@ -57,8 +60,12 @@ def register(mcp: FastMCP) -> None:
         return json.dumps(updates, indent=2)
 
     @mcp.tool()
-    def update_all_nodes() -> str:
-        """Update the package index on ALL nodes in the cluster.
+    @handle_proxmox_error('["perm", "/nodes/{node}", ["Sys.Modify"]]')
+    def refresh_apt_index_all_nodes() -> str:
+        """Refresh the apt package index on ALL nodes in the cluster (apt-get update).
+
+        This does NOT install upgrades — it only refreshes each node's package
+        index so subsequent calls to node_apt_list_upgrades return current data.
 
         WARNING: This will run 'apt-get update' on every node in the cluster.
         This is a cluster-wide operation. Make sure this is intentional.
@@ -76,6 +83,7 @@ def register(mcp: FastMCP) -> None:
         return json.dumps(results, indent=2)
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.Console"]]')
     def lxc_exec_update(node: str, vmid: int, command: str = "apt-get update") -> str:
         """Execute a package update command inside an LXC container.
 
@@ -112,6 +120,7 @@ def register(mcp: FastMCP) -> None:
         )
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.Monitor"]]')
     def vm_exec_update(node: str, vmid: int, command: str = "apt-get update") -> str:
         """Execute a package update command inside a QEMU VM via the guest agent.
 
@@ -133,18 +142,12 @@ def register(mcp: FastMCP) -> None:
             vmid: The VM ID (e.g. 100)
             command: The apt command to run (default: "apt-get update")
 
-        Permission required: VM.Console on /vms/{vmid}
+        Permission required: VM.Monitor on /vms/{vmid}
         """
         _validate_command(command)
         proxmox = create_proxmox_client()
         parts = command.split()
-        result = (
-            proxmox.nodes(node)
-            .qemu(vmid)
-            .agent.exec.post(
-                command=parts[0], **{"input-data": "", "arguments": parts[1:]}
-            )
-        )
+        result = proxmox.nodes(node).qemu(vmid).agent.exec.post(command=parts)
         return json.dumps(
             {
                 "action": "vm-agent-exec",

@@ -5,12 +5,14 @@ import json
 from mcp.server.fastmcp import FastMCP
 
 from proxmox_mcp.auth import create_proxmox_client
+from proxmox_mcp.errors import handle_proxmox_error
 
 
 def register(mcp: FastMCP) -> None:
     """Register task tracking tools with the MCP server."""
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/nodes/{node}", ["Sys.Audit"]]')
     def get_task_status(node: str, upid: str) -> str:
         """Get the status of a Proxmox task by its UPID.
 
@@ -29,6 +31,7 @@ def register(mcp: FastMCP) -> None:
         return json.dumps(status, indent=2)
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/nodes/{node}", ["Sys.Audit"]]')
     def get_task_log(node: str, upid: str, start: int = 0, limit: int = 50) -> str:
         """Get the log output of a Proxmox task.
 
@@ -47,6 +50,7 @@ def register(mcp: FastMCP) -> None:
         return json.dumps(log, indent=2)
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/nodes/{node}", ["Sys.Audit"]]')
     def list_node_tasks(node: str, limit: int = 20) -> str:
         """List recent tasks on a node.
 

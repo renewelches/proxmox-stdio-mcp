@@ -5,15 +5,14 @@ import json
 from mcp.server.fastmcp import FastMCP
 
 from proxmox_mcp.auth import create_proxmox_client
-
-VALID_LXC_ACTIONS = {"start", "stop", "shutdown", "suspend", "resume", "reboot"}
-VALID_VM_ACTIONS = {"start", "stop", "shutdown", "suspend", "resume", "reboot", "reset"}
+from proxmox_mcp.errors import handle_proxmox_error
 
 
 def register(mcp: FastMCP) -> None:
     """Register lifecycle tools with the MCP server."""
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.PowerMgmt"]]')
     def lxc_start(node: str, vmid: int) -> str:
         """Start an LXC container.
 
@@ -33,6 +32,7 @@ def register(mcp: FastMCP) -> None:
         )
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.PowerMgmt"]]')
     def lxc_stop(node: str, vmid: int) -> str:
         """Stop an LXC container immediately (hard stop).
 
@@ -54,6 +54,7 @@ def register(mcp: FastMCP) -> None:
         )
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.PowerMgmt"]]')
     def lxc_shutdown(node: str, vmid: int, timeout: int = 60) -> str:
         """Gracefully shut down an LXC container.
 
@@ -80,6 +81,7 @@ def register(mcp: FastMCP) -> None:
         )
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.PowerMgmt"]]')
     def lxc_suspend(node: str, vmid: int) -> str:
         """Suspend (freeze) an LXC container.
 
@@ -105,6 +107,7 @@ def register(mcp: FastMCP) -> None:
         )
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.PowerMgmt"]]')
     def lxc_resume(node: str, vmid: int) -> str:
         """Resume a suspended LXC container.
 
@@ -128,6 +131,7 @@ def register(mcp: FastMCP) -> None:
         )
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.PowerMgmt"]]')
     def lxc_reboot(node: str, vmid: int, timeout: int = 60) -> str:
         """Reboot an LXC container.
 
@@ -156,6 +160,7 @@ def register(mcp: FastMCP) -> None:
     # --- QEMU VM lifecycle tools ---
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.PowerMgmt"]]')
     def vm_start(node: str, vmid: int) -> str:
         """Start a QEMU virtual machine.
 
@@ -181,6 +186,7 @@ def register(mcp: FastMCP) -> None:
         )
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.PowerMgmt"]]')
     def vm_stop(node: str, vmid: int) -> str:
         """Stop a QEMU VM immediately (hard stop).
 
@@ -201,6 +207,7 @@ def register(mcp: FastMCP) -> None:
         )
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.PowerMgmt"]]')
     def vm_shutdown(node: str, vmid: int, timeout: int = 60) -> str:
         """Gracefully shut down a QEMU virtual machine.
 
@@ -227,6 +234,7 @@ def register(mcp: FastMCP) -> None:
         )
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.PowerMgmt"]]')
     def vm_suspend(node: str, vmid: int) -> str:
         """Suspend a QEMU virtual machine.
 
@@ -252,6 +260,7 @@ def register(mcp: FastMCP) -> None:
         )
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.PowerMgmt"]]')
     def vm_resume(node: str, vmid: int) -> str:
         """Resume a suspended QEMU virtual machine.
 
@@ -275,6 +284,7 @@ def register(mcp: FastMCP) -> None:
         )
 
     @mcp.tool()
+    @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.PowerMgmt"]]')
     def vm_reboot(node: str, vmid: int, timeout: int = 60) -> str:
         """Reboot a QEMU virtual machine.
 

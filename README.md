@@ -183,11 +183,12 @@ By default, `claude mcp add` registers the server at user scope (`~/.claude/clau
 
 For listing and inspecting nodes, VMs, and containers:
 
-| Permission  | Path            | Used By                                                                                               |
-| ----------- | --------------- | ----------------------------------------------------------------------------------------------------- |
-| `Sys.Audit` | `/`             | `get_nodes`, `get_cluster_status`, `get_all_lxcs`, `get_all_vms`                                      |
-| `Sys.Audit` | `/nodes/{node}` | `get_node_status`, `get_node_hosts`, `get_node_hardware`, `get_node_networks`, `get_node_storage`     |
-| `VM.Audit`  | `/vms/{vmid}`   | `get_node_lxcs`, `get_lxc_status`, `get_lxc_config`, `get_node_vms`, `get_vm_status`, `get_vm_config` |
+| Permission        | Path               | Used By                                                                              |
+| ----------------- | ------------------ | ------------------------------------------------------------------------------------ |
+| `Sys.Audit`       | `/`                | `proxmox://nodes`, `proxmox://cluster/status`, `proxmox://lxc`, `proxmox://qemu`    |
+| `Sys.Audit`       | `/nodes/{node}`    | `proxmox://nodes/{node}/status`, `.../hosts`, `.../hardware`, `.../network`          |
+| `Datastore.Audit` | `/storage/{storage}` | `proxmox://nodes/{node}/storage`                                                   |
+| `VM.Audit`        | `/vms/{vmid}`      | `proxmox://nodes/{node}/lxc`, `.../lxc/{vmid}/status`, `.../lxc/{vmid}/config`, same for qemu |
 
 ### Lifecycle Management (Start/Stop/Reboot)
 
@@ -199,7 +200,7 @@ For listing and inspecting nodes, VMs, and containers:
 
 | Permission   | Path            | Used By                               |
 | ------------ | --------------- | ------------------------------------- |
-| `Sys.Modify` | `/nodes/{node}` | `node_apt_update`, `update_all_nodes` |
+| `Sys.Modify` | `/nodes/{node}` | `node_apt_update`, `refresh_apt_index_all_nodes` |
 | `Sys.Audit`  | `/nodes/{node}` | `node_apt_list_upgrades`              |
 | `VM.Console` | `/vms/{vmid}`   | `lxc_exec_update`, `vm_exec_update`   |
 
@@ -228,27 +229,29 @@ pveum aclmod / -user mcp@pve -role MCPFull
 pveum user token add mcp@pve mcp-token --privsep 0
 ```
 
-## Available Tools
+## Available Resources & Tools
 
 ### Resources (Read-Only)
 
-| Tool                 | Description                                           |
-| -------------------- | ----------------------------------------------------- |
-| `get_nodes`          | List all nodes in the cluster                         |
-| `get_node_status`    | Detailed status of a node (CPU, memory, load)         |
-| `get_node_hosts`     | Contents of `/etc/hosts` on a node                    |
-| `get_node_hardware`  | Hardware info (PCI, USB devices)                      |
-| `get_node_networks`  | Network interface configuration                       |
-| `get_node_storage`   | Storage pools and usage                               |
-| `get_cluster_status` | Cluster health and quorum status                      |
-| `get_node_lxcs`      | LXC containers on a specific node                     |
-| `get_all_lxcs`       | All LXC containers across all nodes (grouped by node) |
-| `get_lxc_status`     | Current status of an LXC container                    |
-| `get_lxc_config`     | Configuration of an LXC container                     |
-| `get_node_vms`       | QEMU VMs on a specific node                           |
-| `get_all_vms`        | All VMs across all nodes (grouped by node)            |
-| `get_vm_status`      | Current status of a VM                                |
-| `get_vm_config`      | Configuration of a VM                                 |
+All read-only GET operations are exposed as [MCP resources](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/resources/) with URI templates, not tools. This gives clients semantic clarity (safe reads vs. effectful actions), caching, and discoverability.
+
+| URI                                          | Description                                           |
+| -------------------------------------------- | ----------------------------------------------------- |
+| `proxmox://nodes`                            | List all nodes in the cluster                         |
+| `proxmox://nodes/{node}/status`              | Detailed status of a node (CPU, memory, load)         |
+| `proxmox://nodes/{node}/hosts`               | Contents of `/etc/hosts` on a node                    |
+| `proxmox://nodes/{node}/hardware`            | Hardware info (PCI, USB devices)                      |
+| `proxmox://nodes/{node}/network`             | Network interface configuration                       |
+| `proxmox://nodes/{node}/storage`             | Storage pools and usage                               |
+| `proxmox://cluster/status`                   | Cluster health and quorum status                      |
+| `proxmox://nodes/{node}/lxc`                 | LXC containers on a specific node                     |
+| `proxmox://lxc`                              | All LXC containers across all nodes (grouped by node) |
+| `proxmox://nodes/{node}/lxc/{vmid}/status`   | Current status of an LXC container                    |
+| `proxmox://nodes/{node}/lxc/{vmid}/config`   | Configuration of an LXC container                     |
+| `proxmox://nodes/{node}/qemu`                | QEMU VMs on a specific node                           |
+| `proxmox://qemu`                             | All VMs across all nodes (grouped by node)            |
+| `proxmox://nodes/{node}/qemu/{vmid}/status`  | Current status of a VM                                |
+| `proxmox://nodes/{node}/qemu/{vmid}/config`  | Configuration of a VM                                 |
 
 ### Lifecycle Management
 
@@ -273,7 +276,7 @@ pveum user token add mcp@pve mcp-token --privsep 0
 | ------------------------ | --------------------------------------------------- |
 | `node_apt_update`        | Run `apt-get update` on a node                      |
 | `node_apt_list_upgrades` | List available package upgrades on a node           |
-| `update_all_nodes`       | Run `apt-get update` on all nodes                   |
+| `refresh_apt_index_all_nodes` | Run `apt-get update` on all nodes (refreshes apt index only — does not upgrade) |
 | `lxc_exec_update`        | Run apt commands inside an LXC container            |
 | `vm_exec_update`         | Run apt commands inside a VM (requires guest agent) |
 
@@ -298,13 +301,24 @@ pveum user token add mcp@pve mcp-token --privsep 0
 
 - **SSL Verification**: Enabled by default. Set `PROXMOX_VERIFY_SSL=false` only for self-signed certificates in trusted environments.
 
+## Error Handling
+
+All resources and tools include permission-aware error handling. When the API token lacks a required privilege, the error message tells you exactly which Proxmox permission is missing:
+
+```
+Permission denied: ["perm", "/vms/100", ["VM.PowerMgmt"]] — ensure the API token/user has this privilege.
+```
+
+Other error types (401 auth failure, 404 not found, 500 server error) also return clear, actionable messages.
+
 ## Extending
 
 The server is designed to be extended with additional Proxmox API endpoints. To add new functionality:
 
-1. Create a new module in `src/proxmox_mcp/resources/` or `src/proxmox_mcp/tools/`
-2. Implement a `register(mcp: FastMCP)` function that adds tools via `@mcp.tool()`
-3. Import and register it in `src/proxmox_mcp/server.py`
+1. Create a new module in `proxmox_mcp/resources/` (for read-only `@mcp.resource()`) or `proxmox_mcp/tools/` (for mutations via `@mcp.tool()`)
+2. Implement a `register(mcp: FastMCP)` function
+3. Wrap each function with `@handle_proxmox_error('["perm", "/path", ["Required.Privilege"]]')`
+4. Import and register it in `proxmox_mcp/server.py`
 
 ## License
 
