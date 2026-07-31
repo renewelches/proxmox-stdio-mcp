@@ -12,6 +12,7 @@ from proxmox_mcp.formatting import format_response
 def register(mcp: FastMCP) -> None:
     """Register all node resources with the MCP server."""
 
+    @mcp.tool()
     @mcp.resource("proxmox://nodes")
     @handle_proxmox_error('["perm", "/", ["Sys.Audit"]]')
     def get_nodes() -> str:
@@ -20,6 +21,7 @@ def register(mcp: FastMCP) -> None:
         nodes = proxmox.nodes.get()
         return json.dumps(format_response(nodes), indent=2)
 
+    @mcp.tool()
     @mcp.resource("proxmox://nodes/{node}/status")
     @handle_proxmox_error('["perm", "/nodes/{node}", ["Sys.Audit"]]')
     def get_node_status(node: str) -> str:
@@ -28,6 +30,7 @@ def register(mcp: FastMCP) -> None:
         status = proxmox.nodes(node).status.get()
         return json.dumps(format_response(status), indent=2)
 
+    @mcp.tool()
     @mcp.resource("proxmox://nodes/{node}/hosts")
     @handle_proxmox_error('["perm", "/nodes/{node}", ["Sys.Audit"]]')
     def get_node_hosts(node: str) -> str:
@@ -36,6 +39,7 @@ def register(mcp: FastMCP) -> None:
         hosts = proxmox.nodes(node).hosts.get()
         return json.dumps(hosts, indent=2)
 
+    @mcp.tool()
     @mcp.resource("proxmox://nodes/{node}/hardware")
     @handle_proxmox_error('["perm", "/nodes/{node}", ["Sys.Audit"]]')
     def get_node_hardware(node: str) -> str:
@@ -44,6 +48,7 @@ def register(mcp: FastMCP) -> None:
         hardware = proxmox.nodes(node).hardware.get()
         return json.dumps(format_response(hardware), indent=2)
 
+    @mcp.tool()
     @mcp.resource("proxmox://nodes/{node}/network")
     @handle_proxmox_error('["perm", "/nodes/{node}", ["Sys.Audit"]]')
     def get_node_networks(node: str) -> str:
@@ -52,6 +57,7 @@ def register(mcp: FastMCP) -> None:
         networks = proxmox.nodes(node).network.get()
         return json.dumps(format_response(networks), indent=2)
 
+    @mcp.tool()
     @mcp.resource("proxmox://nodes/{node}/storage")
     @handle_proxmox_error('["perm", "/storage/{storage}", ["Datastore.Audit"]]')
     def get_node_storage(node: str) -> str:

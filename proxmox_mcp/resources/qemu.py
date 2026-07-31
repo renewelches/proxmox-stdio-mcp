@@ -12,6 +12,7 @@ from proxmox_mcp.formatting import format_response
 def register(mcp: FastMCP) -> None:
     """Register all QEMU/VM resources with the MCP server."""
 
+    @mcp.tool()
     @mcp.resource("proxmox://nodes/{node}/qemu")
     @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.Audit"]]')
     def get_node_vms(node: str) -> str:
@@ -20,6 +21,7 @@ def register(mcp: FastMCP) -> None:
         vms = proxmox.nodes(node).qemu.get()
         return json.dumps(format_response(vms), indent=2)
 
+    @mcp.tool()
     @mcp.resource("proxmox://qemu")
     @handle_proxmox_error('["perm", "/", ["VM.Audit"]]')
     def get_all_vms() -> str:
@@ -33,6 +35,7 @@ def register(mcp: FastMCP) -> None:
             result[node_name] = format_response(vms)
         return json.dumps(result, indent=2)
 
+    @mcp.tool()
     @mcp.resource("proxmox://nodes/{node}/qemu/{vmid}/status")
     @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.Audit"]]')
     def get_vm_status(node: str, vmid: str) -> str:
@@ -41,6 +44,7 @@ def register(mcp: FastMCP) -> None:
         status = proxmox.nodes(node).qemu(vmid).status.current.get()
         return json.dumps(format_response(status), indent=2)
 
+    @mcp.tool()
     @mcp.resource("proxmox://nodes/{node}/qemu/{vmid}/config")
     @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.Audit"]]')
     def get_vm_config(node: str, vmid: str) -> str:

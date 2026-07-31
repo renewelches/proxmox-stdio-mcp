@@ -12,6 +12,7 @@ from proxmox_mcp.formatting import format_response
 def register(mcp: FastMCP) -> None:
     """Register all LXC resources with the MCP server."""
 
+    @mcp.tool()
     @mcp.resource("proxmox://nodes/{node}/lxc")
     @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.Audit"]]')
     def get_node_lxcs(node: str) -> str:
@@ -20,6 +21,7 @@ def register(mcp: FastMCP) -> None:
         lxcs = proxmox.nodes(node).lxc.get()
         return json.dumps(format_response(lxcs), indent=2)
 
+    @mcp.tool()
     @mcp.resource("proxmox://lxc")
     @handle_proxmox_error('["perm", "/", ["VM.Audit"]]')
     def get_all_lxcs() -> str:
@@ -33,6 +35,7 @@ def register(mcp: FastMCP) -> None:
             result[node_name] = format_response(lxcs)
         return json.dumps(result, indent=2)
 
+    @mcp.tool()
     @mcp.resource("proxmox://nodes/{node}/lxc/{vmid}/status")
     @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.Audit"]]')
     def get_lxc_status(node: str, vmid: str) -> str:
@@ -41,6 +44,7 @@ def register(mcp: FastMCP) -> None:
         status = proxmox.nodes(node).lxc(vmid).status.current.get()
         return json.dumps(format_response(status), indent=2)
 
+    @mcp.tool()
     @mcp.resource("proxmox://nodes/{node}/lxc/{vmid}/config")
     @handle_proxmox_error('["perm", "/vms/{vmid}", ["VM.Audit"]]')
     def get_lxc_config(node: str, vmid: str) -> str:

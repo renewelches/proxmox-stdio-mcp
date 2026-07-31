@@ -28,13 +28,29 @@ Always use `uv` — never `pip`. Use modern `uv` commands (`uv add`, `uv sync`, 
 
 ## Resources vs Tools — strict rule
 
-**GET operations MUST be MCP resources (`@mcp.resource()`), never tools.**
+**GET operations MUST be MCP resources (`@mcp.resource()`), and additionally registered as tools.**
 
 - Use `@mcp.resource("proxmox://some/uri")` for any read-only Proxmox API call (HTTP GET).
 - Use `@mcp.resource("proxmox://path/{param}/sub")` with URI template parameters for parameterised reads. URI params must exactly match function parameter names. They arrive as `str` regardless of Proxmox type — do not type-hint them as `int`.
-- Use `@mcp.tool()` only for operations with side effects (POST/PUT/DELETE).
+- Mutating operations (POST/PUT/DELETE) get `@mcp.tool()` only — never a resource.
 
 This maps directly onto the MCP spec: resources are safe, idempotent reads; tools are effectful actions.
+
+### Dual registration of reads — deliberate, do not "fix"
+
+Every read-only function also carries `@mcp.tool()` stacked **above** its `@mcp.resource()`:
+
+```python
+@mcp.tool()
+@mcp.resource("proxmox://nodes/{node}/status")
+@handle_proxmox_error('["perm", "/nodes/{node}", ["Sys.Audit"]]')
+def get_node_status(node: str) -> str:
+    ...
+```
+
+Claude Desktop and Claude Code do not autonomously read MCP resources — the user must attach them by hand. Without the tool registration these reads are unreachable to the model. The resource stays the canonical definition; the tool is the access path. Do not remove the `@mcp.tool()` lines from `resources/`.
+
+Tool names come from the bare function name, so names in `resources/` must not collide with names in `tools/`.
 
 ## Error Handling
 

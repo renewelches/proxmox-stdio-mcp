@@ -233,25 +233,27 @@ pveum user token add mcp@pve mcp-token --privsep 0
 
 ### Resources (Read-Only)
 
-All read-only GET operations are exposed as [MCP resources](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/resources/) with URI templates, not tools. This gives clients semantic clarity (safe reads vs. effectful actions), caching, and discoverability.
+All read-only GET operations are exposed as [MCP resources](https://spec.modelcontextprotocol.io/specification/2025-03-26/server/resources/) with URI templates. This gives clients semantic clarity (safe reads vs. effectful actions), caching, and discoverability.
 
-| URI                                          | Description                                           |
-| -------------------------------------------- | ----------------------------------------------------- |
-| `proxmox://nodes`                            | List all nodes in the cluster                         |
-| `proxmox://nodes/{node}/status`              | Detailed status of a node (CPU, memory, load)         |
-| `proxmox://nodes/{node}/hosts`               | Contents of `/etc/hosts` on a node                    |
-| `proxmox://nodes/{node}/hardware`            | Hardware info (PCI, USB devices)                      |
-| `proxmox://nodes/{node}/network`             | Network interface configuration                       |
-| `proxmox://nodes/{node}/storage`             | Storage pools and usage                               |
-| `proxmox://cluster/status`                   | Cluster health and quorum status                      |
-| `proxmox://nodes/{node}/lxc`                 | LXC containers on a specific node                     |
-| `proxmox://lxc`                              | All LXC containers across all nodes (grouped by node) |
-| `proxmox://nodes/{node}/lxc/{vmid}/status`   | Current status of an LXC container                    |
-| `proxmox://nodes/{node}/lxc/{vmid}/config`   | Configuration of an LXC container                     |
-| `proxmox://nodes/{node}/qemu`                | QEMU VMs on a specific node                           |
-| `proxmox://qemu`                             | All VMs across all nodes (grouped by node)            |
-| `proxmox://nodes/{node}/qemu/{vmid}/status`  | Current status of a VM                                |
-| `proxmox://nodes/{node}/qemu/{vmid}/config`  | Configuration of a VM                                 |
+Each one is **also registered as a tool** under its function name. Claude Desktop and Claude Code do not read resources on their own — resources have to be attached manually by the user, so a model-initiated read is impossible through the resource interface alone. The duplicate tool registration is what makes these reads usable in practice; the resource remains the canonical definition, and clients that do support resources will see both.
+
+| URI                                         | Tool name          | Description                                           |
+| ------------------------------------------- | ------------------ | ----------------------------------------------------- |
+| `proxmox://nodes`                           | `get_nodes`        | List all nodes in the cluster                         |
+| `proxmox://nodes/{node}/status`             | `get_node_status`  | Detailed status of a node (CPU, memory, load)         |
+| `proxmox://nodes/{node}/hosts`              | `get_node_hosts`   | Contents of `/etc/hosts` on a node                    |
+| `proxmox://nodes/{node}/hardware`           | `get_node_hardware`| Hardware info (PCI, USB devices)                      |
+| `proxmox://nodes/{node}/network`            | `get_node_networks`| Network interface configuration                       |
+| `proxmox://nodes/{node}/storage`            | `get_node_storage` | Storage pools and usage                               |
+| `proxmox://cluster/status`                  | `get_cluster_status`| Cluster health and quorum status                     |
+| `proxmox://nodes/{node}/lxc`                | `get_node_lxcs`    | LXC containers on a specific node                     |
+| `proxmox://lxc`                             | `get_all_lxcs`     | All LXC containers across all nodes (grouped by node) |
+| `proxmox://nodes/{node}/lxc/{vmid}/status`  | `get_lxc_status`   | Current status of an LXC container                    |
+| `proxmox://nodes/{node}/lxc/{vmid}/config`  | `get_lxc_config`   | Configuration of an LXC container                     |
+| `proxmox://nodes/{node}/qemu`               | `get_node_vms`     | QEMU VMs on a specific node                           |
+| `proxmox://qemu`                            | `get_all_vms`      | All VMs across all nodes (grouped by node)            |
+| `proxmox://nodes/{node}/qemu/{vmid}/status` | `get_vm_status`    | Current status of a VM                                |
+| `proxmox://nodes/{node}/qemu/{vmid}/config` | `get_vm_config`    | Configuration of a VM                                 |
 
 ### Lifecycle Management
 
@@ -318,8 +320,9 @@ The server is designed to be extended with additional Proxmox API endpoints. To 
 1. Create a new module in `proxmox_mcp/resources/` (for read-only `@mcp.resource()`) or `proxmox_mcp/tools/` (for mutations via `@mcp.tool()`)
 2. Implement a `register(mcp: FastMCP)` function
 3. Wrap each function with `@handle_proxmox_error('["perm", "/path", ["Required.Privilege"]]')`
-4. Import and register it in `proxmox_mcp/server.py`
+4. For read-only functions, stack `@mcp.tool()` above `@mcp.resource()` so Claude Desktop/Code can call it (see [Resources](#resources-read-only))
+5. Import and register it in `proxmox_mcp/server.py`
 
 ## License
 
-MIT
+[MIT](LICENSE) — Copyright (c) 2026 René Welches

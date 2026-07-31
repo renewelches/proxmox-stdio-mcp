@@ -3,6 +3,8 @@ name = "proxmox-mcp"
 version = "0.1.0"
 description = "STDIO-based MCP Server for the Proxmox VE API"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = [
     "mcp[cli]>=1.0.0",
