@@ -325,4 +325,4 @@ The server is designed to be extended with additional Proxmox API endpoints. To 
 
 ## License
 
-[MIT](LICENSE) — Copyright (c) 2026 René Welches
+[Apache License 2.0](LICENSE) — Copyright (c) 2026 René Welches

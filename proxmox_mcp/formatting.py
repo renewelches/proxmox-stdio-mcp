@@ -1,5 +1,7 @@
 """Human-friendly formatting utilities for Proxmox API responses."""
 
+from typing import Any
+
 BYTE_FIELDS = {
     "maxmem",
     "maxdisk",
@@ -62,7 +64,7 @@ def format_response(data: dict | list) -> dict | list:
     if not isinstance(data, dict):
         return data
 
-    result = {}
+    result: dict[Any, Any] = {}
     for key, value in data.items():
         if isinstance(value, (dict, list)):
             result[key] = format_response(value)
