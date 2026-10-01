@@ -1,0 +1,99 @@
+name: Release
+
+# A tag push publishes a signed release. A manual run is a dry run: it
+# builds and signs the wheel and sdist, uploads them as a workflow
+# artifact, and publishes nothing.
+#
+# Verify a release with:
+#   cosign verify-blob checksums.txt --bundle checksums.txt.sigstore.json \
+#     --certificate-identity-regexp '^https://github.com/renewelches/proxmox-stdio-mcp/' \
+#     --certificate-oidc-issuer https://token.actions.githubusercontent.com
+#   sha256sum --check checksums.txt
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions: {}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the GitHub release
+      id-token: write # keyless cosign signing and provenance
+      attestations: write # store the build provenance attestation
+    env:
+      IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify tag is on main
+        if: env.IS_RELEASE == 'true'
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor ${{ github.sha }} origin/main || \
+            (echo "::error::Tag must be on main branch" && exit 1)
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.2.0 # no floating v10 tag exists
+
+      # The package version lives in pyproject.toml; the tag must match it so
+      # the wheel filename and the release name never disagree.
+      - name: Verify tag matches project version
+        if: env.IS_RELEASE == 'true'
+        run: |
+          version="$(uv version --short)"
+          if [ "${GITHUB_REF_NAME}" != "v${version}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match pyproject.toml version ${version}"
+            exit 1
+          fi
+
+      - name: Build wheel and sdist
+        run: uv build
+
+      - name: Write checksums
+        working-directory: dist
+        run: sha256sum *.whl *.tar.gz > checksums.txt
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v4.1.2 # no floating v4 tag exists
+
+      # Keyless signature over checksums.txt, which covers every artifact.
+      # The bundle holds the signature, certificate, and transparency-log proof.
+      - name: Sign checksums
+        working-directory: dist
+        run: cosign sign-blob --bundle checksums.txt.sigstore.json checksums.txt --yes
+
+      - name: Attest build provenance
+        if: env.IS_RELEASE == 'true'
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-checksums: ./dist/checksums.txt
+
+      - name: Create GitHub release
+        if: env.IS_RELEASE == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --verify-tag \
+            --generate-notes \
+            --title "${GITHUB_REF_NAME}" \
+            dist/*.whl dist/*.tar.gz dist/checksums.txt dist/checksums.txt.sigstore.json
+
+      - name: Upload dry-run output
+        if: env.IS_RELEASE != 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: snapshot
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/checksums.txt*
+          retention-days: 7
