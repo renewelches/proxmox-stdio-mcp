@@ -2,14 +2,14 @@
 
 import json
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from proxmox_mcp.auth import create_proxmox_client
 from proxmox_mcp.errors import handle_proxmox_error
 from proxmox_mcp.formatting import format_response
 
 
-def register(mcp: FastMCP) -> None:
+def register(mcp: MCPServer) -> None:
     """Register cluster resources with the MCP server."""
 
     @mcp.tool()

@@ -336,7 +336,7 @@ Other error types (401 auth failure, 404 not found, 500 server error) also retur
 The server is designed to be extended with additional Proxmox API endpoints. To add new functionality:
 
 1. Create a new module in `proxmox_mcp/resources/` (for read-only `@mcp.resource()`) or `proxmox_mcp/tools/` (for mutations via `@mcp.tool()`)
-2. Implement a `register(mcp: FastMCP)` function
+2. Implement a `register(mcp: MCPServer)` function
 3. Wrap each function with `@handle_proxmox_error('["perm", "/path", ["Required.Privilege"]]')`
 4. For read-only functions, stack `@mcp.tool()` above `@mcp.resource()` so Claude Desktop/Code can call it (see [Resources](#resources-read-only))
 5. Import and register it in `proxmox_mcp/server.py`

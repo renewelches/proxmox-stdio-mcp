@@ -2,7 +2,7 @@
 
 import json
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from proxmox_mcp.auth import create_proxmox_client
 from proxmox_mcp.errors import handle_proxmox_error
@@ -20,7 +20,7 @@ def _validate_command(command: str) -> None:
         )
 
 
-def register(mcp: FastMCP) -> None:
+def register(mcp: MCPServer) -> None:
     """Register package update tools with the MCP server."""
 
     @mcp.tool()

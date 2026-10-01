@@ -5,9 +5,20 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
+import requests
+from mcp.server.mcpserver.exceptions import ResourceError, ToolError
 from proxmoxer.core import ResourceException
 
 logger = logging.getLogger(__name__)
+
+
+class ProxmoxError(ToolError, ResourceError):
+    """An anticipated failure whose message should reach the client.
+
+    MCPServer replaces any other exception with a generic "Error executing ..."
+    message. Read functions are registered as both tools and resources, so this
+    subclasses both error types to surface the message either way.
+    """
 
 
 def _format_permission_error(
@@ -50,9 +61,12 @@ def handle_proxmox_error(required_permission: str) -> Callable:
             except ResourceException as exc:
                 msg = _format_permission_error(exc.status_code, exc.content, required_permission)
                 logger.error(msg)
-                raise RuntimeError(msg) from exc
+                raise ProxmoxError(msg) from exc
             except ValueError as exc:
-                raise RuntimeError(str(exc)) from exc
+                raise ProxmoxError(str(exc)) from exc
+            except requests.RequestException as exc:
+                # Unreachable host, TLS verification failure, timeout.
+                raise ProxmoxError(f"Cannot reach Proxmox: {exc}") from exc
 
         return wrapper
 
