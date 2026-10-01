@@ -4,7 +4,7 @@ Instructions for AI coding agents working in this repository. Humans: see
 [README.md](README.md).
 
 proxmox-mcp is a STDIO-based MCP server that exposes the Proxmox VE API to
-AI assistants. It uses `proxmoxer` for API access and `mcp[cli]` (FastMCP)
+AI assistants. It uses `proxmoxer` for API access and `mcp[cli]` (`MCPServer`, mcp 2.x)
 for the MCP protocol, and runs as the CLI entry point `proxmox-mcp`. It
 holds Proxmox credentials and can start, stop, and update guests, so treat
 security as the default concern in every change.
@@ -38,7 +38,7 @@ also registered as a tool.
 
 ## Layout
 
-- `proxmox_mcp/server.py` — entry point. Creates the `FastMCP` instance and
+- `proxmox_mcp/server.py` — entry point. Creates the `MCPServer` instance and
   registers all modules.
 - `proxmox_mcp/auth.py` — builds the `ProxmoxAPI` client from env vars.
   Supports password or API token auth.
@@ -53,9 +53,8 @@ also registered as a tool.
   package updates, task tracking. Same `register(mcp)` pattern.
 - `scripts/smoke_test.py` — the `make smoke` check.
 
-`mcp` is capped below 2: mcp 2.x renamed `FastMCP` and changed its APIs.
-Moving to 2.x is a migration, not a dependency bump; do not lift the cap
-without the user asking for it.
+`mcp` is pinned to the 2.x line (`<3`). A new major is a migration, not a
+dependency bump; do not lift the cap without the user asking for it.
 
 ## Resources vs Tools — strict rule
 
@@ -104,6 +103,13 @@ Every resource function and tool must be decorated with
 `'["perm", "/vms/{vmid}", ["VM.Audit"]]'`. Look up the exact check in the
 [Proxmox API viewer](https://pve.proxmox.com/pve-docs/api-viewer/).
 
+The decorator raises `ProxmoxError` (in `errors.py`). MCPServer replaces any
+other exception's text with a generic "Error executing tool ..." message, so
+an error the model should read must be a `ProxmoxError` (or the SDK's
+`ToolError`/`ResourceError`). Never raise `RuntimeError` or similar for an
+expected failure; it reaches the client as a bare "Error executing tool".
+`make smoke` checks that a 403 still surfaces its permission message.
+
 Decorator order matters — `@mcp.resource()` or `@mcp.tool()` must be
 outermost:
 
@@ -120,7 +126,7 @@ def get_node_status(node: str) -> str:
    `@mcp.tool()` + `@mcp.resource()` + `@handle_proxmox_error()`.
 2. **Mutating (POST/PUT/DELETE):** add to a module in `tools/`, use
    `@mcp.tool()` + `@handle_proxmox_error()`.
-3. Implement `register(mcp: FastMCP)` and import/call it in `server.py`.
+3. Implement `register(mcp: MCPServer)` and import/call it in `server.py`.
 
 ## Vulnerability policy
 
@@ -155,7 +161,7 @@ If `make vuln` reports vulnerabilities, fix them in the same change:
 
 **Stop and ask the user instead** when no fixed version exists, the fix
 requires a new major version of a direct dependency (or lifting a declared
-cap such as `mcp<2`), or the upgrade breaks type checking or the smoke test.
+cap such as `mcp<3`), or the upgrade breaks type checking or the smoke test.
 Never silence a finding with `--ignore-vuln`, pin around it, or skip the
 scan without the user's explicit approval.
 

@@ -1,11 +1,11 @@
 """Proxmox MCP Server — STDIO-based MCP server for the Proxmox VE API."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from proxmox_mcp.resources import cluster, lxc, nodes, qemu
 from proxmox_mcp.tools import lifecycle, tasks, updates
 
-mcp = FastMCP("Proxmox MCP Server")
+mcp = MCPServer("Proxmox MCP Server")
 
 # Register all resources and tools
 nodes.register(mcp)
