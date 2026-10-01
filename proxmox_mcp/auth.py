@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 
 from proxmoxer import ProxmoxAPI
 
@@ -59,9 +59,7 @@ def create_proxmox_client() -> ProxmoxAPI:
         if "!" in token_id:
             user_part, token_name = token_id.split("!", 1)
         else:
-            raise ValueError(
-                "PROXMOX_TOKEN_ID must be in format 'user@realm!token-name'"
-            )
+            raise ValueError("PROXMOX_TOKEN_ID must be in format 'user@realm!token-name'")
         logger.info("Authenticating with API token for user: %s", user_part)
         return ProxmoxAPI(
             host,
