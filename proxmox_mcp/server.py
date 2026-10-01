@@ -2,8 +2,8 @@
 
 from mcp.server.fastmcp import FastMCP
 
-from proxmox_mcp.resources import nodes, lxc, qemu, cluster
-from proxmox_mcp.tools import lifecycle, updates, tasks
+from proxmox_mcp.resources import cluster, lxc, nodes, qemu
+from proxmox_mcp.tools import lifecycle, tasks, updates
 
 mcp = FastMCP("Proxmox MCP Server")
 

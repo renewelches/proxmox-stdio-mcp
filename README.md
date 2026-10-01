@@ -177,6 +177,24 @@ Verify the server is registered: `claude mcp list`
 
 By default, `claude mcp add` registers the server at user scope (`~/.claude/claude_desktop_config.json`). Pass `--scope project` to register it in `.mcp.json` in the current directory instead (useful for project-specific setups checked into version control).
 
+### Verifying a Release
+
+Instead of building the wheel yourself, you can download it from the [GitHub releases](https://github.com/renewelches/proxmox-stdio-mcp/releases). Each release ships the wheel, the sdist, a `checksums.txt`, and a keyless [cosign](https://docs.sigstore.dev/) signature bundle over the checksums. To verify a download:
+
+```bash
+cosign verify-blob checksums.txt \
+  --bundle checksums.txt.sigstore.json \
+  --certificate-identity-regexp '^https://github.com/renewelches/proxmox-stdio-mcp/' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+sha256sum --ignore-missing --check checksums.txt
+```
+
+Releases also carry a GitHub build provenance attestation:
+
+```bash
+gh attestation verify proxmox_mcp-*.whl --repo renewelches/proxmox-stdio-mcp
+```
+
 ## Required Permissions
 
 ### Minimal Read-Only (Resources Only)

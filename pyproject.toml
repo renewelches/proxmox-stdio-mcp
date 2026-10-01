@@ -7,7 +7,7 @@ license = "Apache-2.0"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = [
-    "mcp[cli]>=1.0.0",
+    "mcp[cli]>=1.28.1,<2",
     "proxmoxer>=2.3.0",
     "requests>=2.28.0",
 ]
@@ -22,5 +22,44 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["proxmox_mcp"]
 
+# Explicit list, so untracked local files (.claude/, .envrc) never ship.
+[tool.hatch.build.targets.sdist]
+include = ["proxmox_mcp", "README.md", "LICENSE", "pyproject.toml", "uv.lock"]
+
 [tool.uv]
 python-preference = "only-managed"
+
+[dependency-groups]
+dev = [
+    "mypy>=2.3.1",
+    "pip-audit>=2.10.1",
+    "ruff>=0.16.9",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "S",   # flake8-bandit (security)
+    "SIM", # flake8-simplify
+]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["proxmox_mcp", "scripts"]
+warn_unused_ignores = true
+warn_redundant_casts = true
+
+# proxmoxer ships no type hints or stubs.
+[[tool.mypy.overrides]]
+module = ["proxmoxer", "proxmoxer.*"]
+ignore_missing_imports = true

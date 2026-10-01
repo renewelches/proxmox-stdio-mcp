@@ -1,7 +1,6 @@
 """Error handling for Proxmox API calls with permission-aware messages."""
 
 import functools
-import json
 import logging
 from collections.abc import Callable
 from typing import Any
@@ -49,9 +48,7 @@ def handle_proxmox_error(required_permission: str) -> Callable:
             try:
                 return fn(*args, **kwargs)
             except ResourceException as exc:
-                msg = _format_permission_error(
-                    exc.status_code, exc.content, required_permission
-                )
+                msg = _format_permission_error(exc.status_code, exc.content, required_permission)
                 logger.error(msg)
                 raise RuntimeError(msg) from exc
             except ValueError as exc:

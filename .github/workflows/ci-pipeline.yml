@@ -1,0 +1,83 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, reopened, synchronize]
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC: catch newly published vulnerabilities
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint, typecheck, vulnerabilities
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.2.0 # no floating v10 tag exists
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Check formatting
+        run: make fmt-check
+
+      - name: Lint
+        run: make lint
+
+      - name: Check uv.lock is up to date
+        run: make lock-check
+
+      - name: Type check
+        run: make typecheck
+
+      - name: Run vulnerability check
+        run: make vuln
+
+  smoke:
+    name: Smoke test (${{ matrix.os }}, py${{ matrix.python }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ["3.10", "3.13"] # oldest supported and current
+    runs-on: ${{ matrix.os }}
+    env:
+      UV_PYTHON: ${{ matrix.python }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Import server and check registrations
+        run: make smoke
+
+      - name: Build wheel and sdist
+        run: make build
