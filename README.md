@@ -118,7 +118,7 @@ uv build
 1. Install it:
 
 ```bash
-uv tool install dist/proxmox_mcp-0.1.0-py3-none-any.whl
+uv tool install dist/proxmox_mcp-0.2.0-py3-none-any.whl
 ```
 
 1. Update your MCP config:
@@ -151,7 +151,7 @@ claude mcp add proxmox \
   -e PROXMOX_TOKEN_ID=user@pam!mcp-token \
   -e PROXMOX_TOKEN_SECRET=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
   -e PROXMOX_VERIFY_SSL=false \
-  -- uvx --from /path/to/dist/proxmox_mcp-0.1.0-py3-none-any.whl proxmox-mcp
+  -- uvx --from /path/to/dist/proxmox_mcp-0.2.0-py3-none-any.whl proxmox-mcp
 ```
 
 `uvx --from` installs the wheel into an isolated environment on first run and caches it — no virtual environment management needed.
@@ -159,7 +159,7 @@ claude mcp add proxmox \
 Alternatively, install the wheel as a persistent `uv` tool first:
 
 ```bash
-uv tool install /path/to/dist/proxmox_mcp-0.1.0-py3-none-any.whl
+uv tool install /path/to/dist/proxmox_mcp-0.2.0-py3-none-any.whl
 ```
 
 Then register it with Claude Code:
