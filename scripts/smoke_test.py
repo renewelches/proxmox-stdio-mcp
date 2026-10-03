@@ -1,13 +1,15 @@
 """Import the server and check its registrations without contacting Proxmox.
 
 Catches dependency breakage (e.g. an incompatible mcp release), enforces the
-dual-registration rule (every resource must also be exposed as a tool), and
-checks that Proxmox errors reach the client instead of MCPServer's generic
+dual-registration rule (every resource must also be exposed as a tool),
+checks that the server reports the installed package version, and checks
+that Proxmox errors reach the client instead of MCPServer's generic
 "Error executing tool" message.
 """
 
 import asyncio
 import sys
+from importlib.metadata import version
 
 from mcp import Client
 from mcp.types import TextContent
@@ -37,13 +39,21 @@ async def main() -> int:
 
     nodes.create_proxmox_client = _forbidden
     async with Client(mcp) as client:
+        info = client.server_info
         result = await client.call_tool("get_node_status", {"node": "pve"})
+    expected = version("proxmox-mcp")
+    reported = info.version if info else None
+    if reported != expected:
+        print(
+            f"error: server reports version {reported!r}, package is {expected!r}", file=sys.stderr
+        )
+        return 1
     text = " ".join(c.text for c in result.content if isinstance(c, TextContent))
     if not (result.is_error and "Sys.Audit" in text):
         print(f"error: permission message did not reach the client: {text!r}", file=sys.stderr)
         return 1
 
-    print(f"ok: {len(tools)} tools, {len(resources)} resources, errors surface")
+    print(f"ok: version {expected}, {len(tools)} tools, {len(resources)} resources, errors surface")
     return 0
 
 
