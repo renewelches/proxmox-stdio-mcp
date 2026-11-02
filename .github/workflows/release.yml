@@ -41,7 +41,7 @@ jobs:
             (echo "::error::Tag must be on main branch" && exit 1)
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v10.2.0 # no floating v10 tag exists
+        uses: astral-sh/setup-uv@v10.3.0 # no floating v10 tag exists
 
       # The package version lives in pyproject.toml; the tag must match it so
       # the wheel filename and the release name never disagree.
