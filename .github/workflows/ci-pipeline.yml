@@ -21,6 +21,8 @@ jobs:
   checks:
     name: Lint, typecheck, vulnerabilities
     runs-on: ubuntu-latest
+    env:
+      UV_PYTHON: "3.13" # current stable; avoid sdist builds on newer managed Pythons
 
     steps:
       - name: Checkout code
@@ -29,7 +31,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v10.2.0 # no floating v10 tag exists
+        uses: astral-sh/setup-uv@v10.3.0 # no floating v10 tag exists
         with:
           enable-cache: true
 
@@ -69,7 +71,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@v10.3.0
         with:
           enable-cache: true
 
