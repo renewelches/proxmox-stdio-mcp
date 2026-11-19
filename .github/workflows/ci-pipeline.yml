@@ -31,7 +31,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v10.3.0 # no floating v10 tag exists
+        uses: astral-sh/setup-uv@v10.3.3 # no floating v10 tag exists
         with:
           enable-cache: true
 
@@ -71,7 +71,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v10.3.0
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: true
 
